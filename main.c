@@ -1,25 +1,43 @@
 /*
- * GccApplication1.c
+ * Lumin.c
  *
  * Created: 4/1/2022 7:53:35 PM
  * Author : millross
  */ 
 
 #define F_CPU 16000000
-
+#define SENSORVALUE 2
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdlib.h>
 #include "usart.h"
 
-#define MINIMALVALUE 2
 void InitADC();
 uint16_t ReadADC(uint8_t ADCchannel);
 
-double val1, val2;
+void InitADC()
+{
+	// Select Vref=AVcc
+	ADMUX |= (1<<REFS0);
+	//set prescaller to 128 and enable ADC
+	ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);
+}
+
+
+uint16_t ReadADC(uint8_t ADCchannel)
+{
+	//select ADC channel with safety mask
+	ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
+	//single conversion mode
+	ADCSRA |= (1<<ADSC);
+	// wait until ADC conversion is complete
+	while( ADCSRA & (1<<ADSC) );
+	return ADC;
+}
 
 int main(void)
 {
+	double val1, val2;
 	// Initialise the USART
 	USART_init(9600);
 	USART_putstr("#USART init\n");
@@ -43,31 +61,11 @@ int main(void)
 		itoa(val1,str,10);
 		USART_putstr(str);
 		USART_putstr("\n");
-		// MINIMALVALUE can be changed, increasing will make it less sensitive. Decreasing will make it more sensitive
-		if(val1-val2 > MINIMALVALUE || val2-val1 > MINIMALVALUE)
+		// SENSORVALUE can be changed, increasing will make it less sensitive. Decreasing will make it more sensitive
+		if(val1-val2 > SENSORVALUE || val2-val1 > SENSORVALUE)
 		{
 			PORTC ^= 0b00000010; // LIGHT ON UC
 			_delay_ms(200);
 		}
 	}
 }
-
-void InitADC()
-{
-	// Select Vref=AVcc
-	ADMUX |= (1<<REFS0);
-	//set prescaller to 128 and enable ADC
-	ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);
-}
-
-uint16_t ReadADC(uint8_t ADCchannel)
-{
-	//select ADC channel with safety mask
-	ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
-	//single conversion mode
-	ADCSRA |= (1<<ADSC);
-	// wait until ADC conversion is complete
-	while( ADCSRA & (1<<ADSC) );
-	return ADC;
-}
-
