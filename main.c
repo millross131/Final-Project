@@ -5,47 +5,69 @@
  * Author : millross
  */ 
 
-#include <avr/io.h>
+#define F_CPU 16000000
 
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdlib.h>
+#include "usart.h"
+
+#define MINIMALVALUE 2
+void InitADC();
+uint16_t ReadADC(uint8_t ADCchannel);
+
+double val1, val2;
 
 int main(void)
 {
-	DDRC = 0xFF;
-    /*Skeleton code for clap*/
-    if(microphone hears clap){
-		PORTC = 0xFF;
-	}
-	/*Skeleton code for temp sensor*/
-	if(temp sensor val >= 80){
-		set bulb color to red 
-	}
-	else if(temp sensor val < 80 && temp sensor val > 65){
-		set bulb color to yellow
-	}
-	else if(temp sensor val <= 65 && temp sensor val){
-		set bulb color to blue
-	}
-	/*Skeleton code for remote*/
-	if(power button pressed){
-		if(PORTC == 0xFF){
-			PORTC = 0;
-		}
-		else{
-			PORTC = 0xFF;
-		}
-	}
-	if(1 is pressed){
-		if(normal mode){
-			go to temp mode
-		}
-		else{
-			go to normal mode
+	// Initialise the USART
+	USART_init(9600);
+	USART_putstr("#USART init\n");
+	// Initialise the ADC
+	InitADC();
+	USART_putstr("#ADC init\n");
+
+	// PC1 pin of PORTC output, the rest input.
+	DDRC = 0b00000010;
+	// set initial values to PORTC low.
+	PORTC = 0b00000000;
+
+	while(1)
+	{
+		// read value and store in val1
+		val1=ReadADC(0);
+		_delay_ms(1);
+		// read next value en store in val2
+		val2=ReadADC(0);
+		char str[10];
+		itoa(val1,str,10);
+		USART_putstr(str);
+		USART_putstr("\n");
+		// MINIMALVALUE can be changed, increasing will make it less sensitive. Decreasing will make it more sensitive
+		if(val1-val2 > MINIMALVALUE || val2-val1 > MINIMALVALUE)
+		{
+			PORTC ^= 0b00000010; // LIGHT ON UC
+			_delay_ms(200);
 		}
 	}
-	/*Skeleton code for alarm and lights on*/
-	(if user wakeup t == real clk t){
-		buzzer on
-		slowly turn lights on 
-	} 
+}
+
+void InitADC()
+{
+	// Select Vref=AVcc
+	ADMUX |= (1<<REFS0);
+	//set prescaller to 128 and enable ADC
+	ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);
+}
+
+uint16_t ReadADC(uint8_t ADCchannel)
+{
+	//select ADC channel with safety mask
+	ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
+	//single conversion mode
+	ADCSRA |= (1<<ADSC);
+	// wait until ADC conversion is complete
+	while( ADCSRA & (1<<ADSC) );
+	return ADC;
 }
 
