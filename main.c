@@ -7,6 +7,7 @@
 
 #define F_CPU 16000000
 #define SENSORVALUE 2
+#define BAUD 9600
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdlib.h>
@@ -37,9 +38,9 @@ uint16_t ReadADC(uint8_t ADCchannel)
 
 int main(void)
 {
-	double val1, val2;
+	double value1, value2;
 	// Initialise the USART
-	USART_init(9600);
+	USART_init(BAUD);
 	USART_putstr("#USART init\n");
 	// Initialise the ADC
 	InitADC();
@@ -53,16 +54,16 @@ int main(void)
 	while(1)
 	{
 		// read value and store in val1
-		val1=ReadADC(0);
+		value1=ReadADC(0);
 		_delay_ms(1);
 		// read next value en store in val2
 		val2=ReadADC(0);
 		char str[10];
-		itoa(val1,str,10);
+		itoa(value1,str,10);
 		USART_putstr(str);
 		USART_putstr("\n");
 		// SENSORVALUE can be changed, increasing will make it less sensitive. Decreasing will make it more sensitive
-		if(val1-val2 > SENSORVALUE || val2-val1 > SENSORVALUE)
+		if(value1-value2 > SENSORVALUE || value2-value1 > SENSORVALUE)
 		{
 			PORTC ^= 0b00000010; // LIGHT ON UC
 			_delay_ms(200);
