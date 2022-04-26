@@ -1,0 +1,140 @@
+#include <Wire.h>
+#include <TimeLib.h>
+#include <DS1307RTC.h>
+#include <LiquidCrystal.h>
+#include <RTClib.h>
+
+tmElements_t tm;
+LiquidCrystal LCD(12, 11, 5, 4, 3, 2);
+void setalarms(int , int , int );
+int sensorPin = A2;
+int tempC, tempF;
+
+#define set_save 10
+#define incrhour 9
+#define incrminute 8
+#define buzzer 13
+
+
+
+int hours;
+int minutes;
+void setup() {
+  pinMode(A1, LOW);
+  pinMode(buzzer, OUTPUT);
+  pinMode(set_save, INPUT_PULLUP);
+  pinMode(incrhour, INPUT_PULLUP);
+  pinMode(incrminute, INPUT_PULLUP);
+  digitalWrite(set_save, HIGH);
+  digitalWrite(incrhour, HIGH);
+  digitalWrite(incrminute, HIGH);
+  LCD.begin(16, 2);
+  LCD.clear();
+  delay(1000);
+  
+
+}
+int get_temperature(int pin) {
+
+int temperature = analogRead(pin);
+
+float voltage = temperature * 5.0;
+voltage = voltage / 1024.0;
+return ((voltage - 0.5) * 100);
+}
+int celsius_to_fahrenheit(int temp) {
+return (temp * 9 / 5) + 32;
+}
+
+void loop() 
+{
+tempC = get_temperature(sensorPin);
+tempF = celsius_to_fahrenheit(tempC);
+  time_date();
+  if(digitalRead(set_save) == 0)
+  {
+    delay(170);
+    setalarms(tm.Hour, tm.Minute, tm.Second);
+    } 
+  else if(hours == tm.Hour && minutes == tm.Minute)
+    {
+      LCD.clear();
+      LCD.setCursor(0,0);
+      LCD.print("Wake up! ");
+      tempC = get_temperature(sensorPin);
+      tempF = celsius_to_fahrenheit(tempC);
+      LCD.print(tempF); LCD.print(" "); LCD.print((char)223); LCD.print("F");
+      LCD.setCursor(0,3);
+      if(tempF>80){
+        LCD.print("It's hot out!");
+      }
+      else if(tempF<80 && tempF >= 65){
+        LCD.print("It's nice out!");
+      }
+      else if(tempF<65){
+        LCD.print("Wear a jacket!");
+      }
+      pinMode(A1, HIGH);
+      beep();
+      beep();
+    }
+}
+
+void time_date()
+{
+  if (RTC.read(tm))
+  {
+    LCD.setCursor(0, 0);
+    LCD.print("Time = " + (String)(tm.Hour) + ":" + (String)(tm.Minute) + ":" + (String)tm.Second + "    ");
+    LCD.setCursor(0, 1);
+    LCD.print("Date = " + (String)(tm.Day) + "/" + (String)(tm.Month) + "/" + (String)tmYearToCalendar(tm.Year) + "   ");
+  }
+  delay(170);
+}
+
+void setalarms(int HOURS, int MINUTES, int SECONDS)
+{
+  LCD.clear();
+  LCD.setCursor(0, 0);
+  LCD.print("    Set Alarm    ");
+  LCD.setCursor(0, 1);
+  
+ while (1)
+  {
+    if (digitalRead(incrhour) == 0 && digitalRead(incrminute) == 1 && digitalRead(set_save) == 1)
+    {
+      HOURS = HOURS + 1;
+      delay(170);
+      if (HOURS > 23)
+        HOURS = HOURS - 24;
+    }
+    else if (digitalRead(incrhour) == 1 && digitalRead(incrminute) == 1 && digitalRead(set_save) == 0)
+      {
+        hours = HOURS;
+        minutes = MINUTES;
+        LCD.clear();
+        LCD.setCursor(0,0);
+        LCD.print("   Alarm Time   ");
+        LCD.setCursor(0,1);
+        LCD.print("  has been Set  ");
+        delay(2000);
+        break;
+      }
+    else if (digitalRead(incrhour) == 1 && digitalRead(incrminute) == 0 && digitalRead(set_save) == 1)
+    {
+      MINUTES = MINUTES + 1;
+      delay(170);
+      if (MINUTES > 60)
+        MINUTES = MINUTES - 60;
+    }
+    LCD.setCursor(4, 1);
+    LCD.print((String)(HOURS) + ":" + (String)(MINUTES) + ":" + (String)SECONDS + "      ");
+  }
+}
+
+void beep()
+{ digitalWrite(buzzer, HIGH);
+  delay(500);
+  digitalWrite(buzzer,LOW);
+  delay(500);
+  }
