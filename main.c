@@ -57,7 +57,7 @@ int main(void)
 		value1=ReadADC(0);
 		_delay_ms(1);
 		// read next value en store in val2
-		val2=ReadADC(0);
+		value2=ReadADC(0);
 		char str[10];
 		itoa(value1,str,10);
 		USART_putstr(str);
